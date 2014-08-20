@@ -73,18 +73,30 @@
 
 var MEDIA = {};
 
-MEDIA.width = 640;
-MEDIA.height = 480;
+MEDIA.width = 320;
+MEDIA.height = 240;
 MEDIA.quality = 100;
 
-MEDIA.Canvas = {
-	init: function(args) {
-		this.el = document.createElement('canvas');
-		this.el.className = 'canvas';
-		document.body.appendChild(this.el);
-		this.el.width = args.width;
-		this.el.height = args.height;
-		this.context = this.el.getContext("2d");
+MEDIA.Canvas = function() {
+	this.el = document.createElement('canvas');
+	this.el.className = 'canvas';
+	document.body.appendChild(this.el);
+	this.el.width = MEDIA.width;
+	this.el.height = MEDIA.height;
+	this.context = this.el.getContext("2d");
+	this.defaultArgs = {
+		x:0, y:0, w:MEDIA.width, h:MEDIA.height
+	};
+};
+
+MEDIA.Canvas.prototype = {
+	getImageData:function(args) {
+		args = args || this.defaultArgs;
+		return this.context.getImageData(args.x, args.y, args.w, args.h);
+	},
+	putImageData:function(imgData, args) {
+		args = args || this.defaultArgs;
+		this.context.putImageData(imgData, args.x, args.y);
 	}
 };
 
@@ -96,8 +108,6 @@ MEDIA.Camera = {
 		args.quality = args.quality || MEDIA.quality;
 		args.audio = args.audio || false;
 		args.video = args.video || true;
-
-		MEDIA.Canvas.init(args);
 		
 		getUserMedia(args, this.success, this.deviceError);
 
@@ -132,53 +142,6 @@ MEDIA.Camera = {
 		if (this.filter_on) {
 			this.filter_id = (this.filter_id + 1) & 7;
 		}
-	},
-
-	capture: function () {
-		MEDIA.Canvas.context.drawImage(MEDIA.Camera.video, 0, 0, MEDIA.width, MEDIA.height);
-	},
-
-	getImageData:function() {
-		return MEDIA.Canvas.context.getImageData(0, 0, MEDIA.width, MEDIA.height);
-	},
-
-	putImageData:function(img) {
-		MEDIA.Canvas.context.putImageData(img, 0, 0);
-	},
-
-	pixels:function() {
-
-		var w = MEDIA.width,
-		h = MEDIA.height;
-
-		MEDIA.Camera.capture();
-
-		var img = MEDIA.Canvas.context.getImageData(0, 0, w, h);
-		var data = img.data;
-
-		var pos = 0;
-		for (var i = 0; i < data.length; i += 4) {
-			var r = data[i];
-			var g = data[i + 1];
-			var b = data[i + 2];
-
-			if (r > g && r > b) {
-				data[i] = r > 128 ? 255 : 0;
-				data[i + 1] = 0;
-				data[i + 2] = 0;
-			} else if (g > r && g > b) {
-				data[i] = 0;
-				data[i + 1] = g > 128 ? 255 : 0;
-				data[i + 2] = 0;
-			} else {
-				data[i] = 0;
-				data[i + 1] = 0;
-				data[i + 2] = b > 128 ? 255 : 0;
-			}
-
-		}
-
-		MEDIA.Canvas.context.putImageData(img, 0, 0);
 	}
 
 };
